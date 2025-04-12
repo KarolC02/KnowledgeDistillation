@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, TensorDataset, Dataset
 from torchvision.utils import make_grid
 from torchvision import models, datasets
 from torchvision import transforms 
-
+import torchvision
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss, Precision, Recall
 from ignite.handlers import LRScheduler, ModelCheckpoint, global_step_from_engine
@@ -19,6 +19,7 @@ import ignite.contrib.engines.common as common
 from torch.utils.tensorboard import SummaryWriter
 import opendatasets as od
 import os
+import sys
 from random import randint
 import urllib
 import zipfile
@@ -72,14 +73,21 @@ if(model_name == "resnet18_pretrained" ):
     model = models.resnet18(weights = ResNet18_Weights.DEFAULT)
 elif(model_name == "myCNN"):
     model = myCNN()
-# model = nn.DataParallel(model)  # This automatically uses all available GPUs
+# model = nn.DataParallel(model)  # Use all available GPUs
 model = model.to(device)  # Move the model to the device (GPU)
 
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)
 criterion = nn.CrossEntropyLoss()
-num_epochs = 100
+num_epochs = 10
 
-writer = SummaryWriter(log_dir=f'logs/training_accuracy/{model_name}/lr={lr}/batch_size={batch_size}/')
+examples = iter(val_loader)
+examample_data, example_labels = examples.next()
+
+writer = SummaryWriter("logs/tiny_image_net")
+img_grid = torchvision.utils.make_grid()
+writer.add_image('tiny_image_net_images',img_grid)
+writer.close()
+sys.exit()
 
 for epoch in range(num_epochs):
     model.train()
