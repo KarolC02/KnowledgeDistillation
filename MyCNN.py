@@ -64,7 +64,7 @@ with torch.no_grad():
 
 val_accuracy = 100 * correct / total
 print(f"Pre-Training Validation Accuracy: {val_accuracy:.2f}%")
-writer.add_scalar("Validation Accuracy", val_accuracy)
+writer.add_scalar("Validation Accuracy", val_accuracy, 0)
 # -----------------------------------------------------------
 running_loss = 0.0
 running_correct = 0
@@ -129,5 +129,5 @@ with torch.no_grad():
 
 val_accuracy = 100 * correct / total
 print(f"Validation Accuracy: {val_accuracy:.2f}%")
-writer.add_scalar("Validation Accuracy", val_accuracy, epoch)
+writer.add_scalar("Validation Accuracy", val_accuracy, num_epochs)
 writer.close()
