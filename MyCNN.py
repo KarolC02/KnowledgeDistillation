@@ -81,7 +81,7 @@ criterion = nn.CrossEntropyLoss()
 num_epochs = 10
 
 examples = iter(val_loader)
-examample_data, example_labels = examples.next()
+examample_data, example_labels = next(examples)
 
 writer = SummaryWriter("logs/tiny_image_net")
 img_grid = torchvision.utils.make_grid()
