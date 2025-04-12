@@ -42,4 +42,11 @@ def get_args():
         help="Directory to save TensorBoard logs"
     )
 
+    parser.add_argument(
+        "parallel",
+        type=bool,
+        default=True,
+        help="Run parallel on multiple GPUs"
+    )
+
     return parser.parse_args()

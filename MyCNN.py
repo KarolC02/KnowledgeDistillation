@@ -1,30 +1,17 @@
 # Import dependencies
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from datetime import datetime as dt
 from tqdm import tqdm
 import torch
-from torch import optim, nn
-from torch.utils.data import DataLoader, TensorDataset, Dataset
+from torch import nn
+from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
 from torchvision import models, datasets
 from torchvision import transforms 
-import torchvision
-from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
-from ignite.metrics import Accuracy, Loss, Precision, Recall
-from ignite.handlers import LRScheduler, ModelCheckpoint, global_step_from_engine
-from ignite.contrib.handlers import ProgressBar, TensorboardLogger
-import ignite.contrib.engines.common as common
 from torch.utils.tensorboard import SummaryWriter
-import opendatasets as od
-import os
-import sys
 from random import randint
 from models.models import model_dict
-import urllib
-import zipfile
 from utils.arg_utils import get_args
+
+args = get_args()
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -35,7 +22,21 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-batch_size = 64
+
+model_name = args.model
+lr = args.lr
+batch_size = args.batch_size
+num_epochs = args.num_epochs
+parallel = args.parallel
+
+model = model_dict[args.model]()
+
+if(parallel):
+    model = nn.DataParallel(model)
+model.to(device)
+
+optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+criterion = nn.CrossEntropyLoss()
 
 train_dataset = datasets.ImageFolder("datasets/tiny-imagenet-200/train", transform=transform)
 val_dataset = datasets.ImageFolder("datasets/tiny-imagenet-200/val/images", transform=transform)
@@ -44,28 +45,16 @@ train_loader = DataLoader(train_dataset, batch_size = batch_size , shuffle=True,
 val_loader = DataLoader(val_dataset, batch_size = batch_size , shuffle=False, num_workers = 16, pin_memory=True)
 
 
-args = get_args()
-model_name = args.model
-model = model_dict[args.model]()
-model.to(device)
-lr = args.lr
-num_epochs = args.num_epochs
-optimizer = torch.optim.Adam(model.parameters(), lr = lr)
-criterion = nn.CrossEntropyLoss()
-
-
-examples = iter(val_loader)
-example_data, example_labels = next(examples)
-
-writer = SummaryWriter(log_dir="logs/tiny_image_net", comment=f"_{model_name}_lr={lr}_epochs={num_epochs}")
-
+# examples = iter(val_loader)
+# example_data, example_labels = next(examples)
 # img_grid = torchvision.utils.make_grid(example_data)
 # writer.add_image('tiny_image_net_images',img_grid)
-model.eval()
-example_data = example_data.to(device)
-with torch.no_grad():
-    writer.add_graph(model, example_data)
+# model.eval()
+# example_data = example_data.to(device)
+# with torch.no_grad():
+#     writer.add_graph(model, example_data)
 
+writer = SummaryWriter(log_dir=f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}")
 running_loss = 0.0
 running_correct = 0
 running_total = 0
