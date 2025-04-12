@@ -47,6 +47,7 @@ val_loader = DataLoader(val_dataset, batch_size = batch_size , shuffle=False, nu
 args = get_args()
 model_name = args.model
 model = model_dict[args.model]()
+model.to(device)
 lr = args.lr
 num_epochs = args.num_epochs
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)
