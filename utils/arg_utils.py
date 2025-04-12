@@ -43,9 +43,8 @@ def get_args():
     )
 
     parser.add_argument(
-        "parallel",
-        type=bool,
-        default=True,
+        "--parallel",
+        action="store_true",
         help="Run parallel on multiple GPUs"
     )
 
