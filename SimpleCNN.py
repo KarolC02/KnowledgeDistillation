@@ -121,52 +121,37 @@ val_loader = generate_dataloader(val_img_dir, "val",
 val_loader_pretrain = generate_dataloader(val_img_dir, "val",
                                  transform=preprocess_transform_pretrain, batch_size = batch_size)
 
-# Define model architecture (using efficientnet-b3 version)
 from efficientnet_pytorch import EfficientNet
 model = EfficientNet.from_pretrained('efficientnet-b3', num_classes=200)
 
-# Move model to designated device (Use GPU when on Colab)
 model = model.to(device)
 
-# Define hyperparameters and settings
-lr = 0.001  # Learning rate
-num_epochs = 10  # Number of epochs
-log_interval = 300  # Number of iterations before logging
+lr = 0.001  
+num_epochs = 10  
+log_interval = 300  
 
-# Set loss function (categorical Cross Entropy Loss)
 loss_func = nn.CrossEntropyLoss()
 
-# Set optimizer (using Adam as default)
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
-# Setup pytorch-ignite trainer engine
 trainer = create_supervised_trainer(model, optimizer, loss_func, device=device)
 
-# Add progress bar to monitor model training
 ProgressBar(persist=True).attach(trainer, output_transform=lambda x: {"Batch Loss": x})
 
-# Define evaluation metrics
 metrics = {
     "accuracy": Accuracy(), 
     "loss": Loss(loss_func),
 }
 
-# Setup pytorch-ignite evaluator engines. We define two evaluators as they do
-# not have exactly similar roles. `evaluator` will save the best model based on 
-# validation score, whereas `train_evaluator` logs metrics on training set only
 
-# Evaluator for training data
 train_evaluator = create_supervised_evaluator(model, metrics=metrics, device=device)
 
-# Evaluator for validation data
 evaluator = create_supervised_evaluator(model, metrics=metrics, device=device)
 
-# Display message to indicate start of training
 @trainer.on(Events.STARTED)
 def start_message():
     print("Begin training")
 
-# Log results from every batch
 @trainer.on(Events.ITERATION_COMPLETED(every=log_interval))
 def log_batch(trainer):
     batch = (trainer.state.iteration - 1) % trainer.state.epoch_length + 1
@@ -176,7 +161,6 @@ def log_batch(trainer):
         f"Loss: {trainer.state.output:.3f}"
     )
 
-# Evaluate and print training set metrics
 @trainer.on(Events.EPOCH_COMPLETED)
 def log_training_loss(trainer):
     print(f"Epoch [{trainer.state.epoch}] - Loss: {trainer.state.output:.2f}")
@@ -186,7 +170,7 @@ def log_training_loss(trainer):
     print(f"Train - Loss: {metrics['loss']:.3f}, "
           f"Accuracy: {metrics['accuracy']:.3f} "
           )
-# Sets up checkpoint handler to save best n model(s) based on validation accuracy metric
+
 common.save_best_model_by_val_score(
           output_path="best_models",
           evaluator=evaluator,
@@ -197,13 +181,9 @@ common.save_best_model_by_val_score(
           tag="val"
 )
 
-# Define a Tensorboard logger
 tb_logger = TensorboardLogger(log_dir="logs")
 
-# Using common module to setup tb logger (Alternative method)
-# tb_logger = common.setup_tb_logging("tb_logs", trainer, optimizer, evaluators=evaluator)
 
-# Attach handler to plot trainer's loss every n iterations
 tb_logger.attach_output_handler(
     trainer,
     event_name=Events.ITERATION_COMPLETED(every=log_interval),
@@ -211,7 +191,7 @@ tb_logger.attach_output_handler(
     output_transform=lambda loss: {"Batch Loss": loss},
 )
 
-# Attach handler to dump evaluator's metrics every epoch completed
+
 for tag, evaluator in [("training", train_evaluator), ("validation", evaluator)]:
     tb_logger.attach_output_handler(
         evaluator,
@@ -222,8 +202,6 @@ for tag, evaluator in [("training", train_evaluator), ("validation", evaluator)]
     )
 
 
-# Start training
 trainer.run(train_loader_pretrain, max_epochs=num_epochs)
 
-# Close Tensorboard
 tb_logger.close()
