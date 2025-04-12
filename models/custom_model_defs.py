@@ -1,6 +1,6 @@
 from torch import optim, nn
 import torch
-import torch.functional as F
+import torch.nn.functional as F
 
 class myCNN(nn.Module):
     def __init__(self):
