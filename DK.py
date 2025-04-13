@@ -63,7 +63,13 @@ def main():
     else:
         print(f"Logits from model {full_model_name} not found. Performing forward pass...")
         model = model_dict[teacher_model_name]()
-        model.load_state_dict(torch.load(model_path))
+        state_dict = torch.load(model_path)
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            new_key = k.replace('module.', '')  # Remove 'module.' if present
+            new_state_dict[new_key] = v
+
+        model.load_state_dict(new_state_dict)
         save_logits(model, device, train_loader, parallel, batch_size, logits_file)
         print(f"Forward pass performed successfully. Logits saved to {os.path.join('saved_logits', full_model_name, 'logits.pth')}")
 
