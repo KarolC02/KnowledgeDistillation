@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # List of models
-models=("resnet18_pretrained" "resnet50_pretrained" "AlexNet_pretrained" "ConvNeXt_pretrained" "myCNN" "fastCNN" "OneLayerNN")
-# models=("myCNN" "fastCNN" "OneLayerNN")
+# models=("resnet18_pretrained" "resnet50_pretrained" "AlexNet_pretrained" "ConvNeXt_pretrained" "myCNN" "fastCNN" "OneLayerNN")
+models=("myImprovedCNN")
 
 batch_size=128
 lr=0.001
