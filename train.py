@@ -52,73 +52,42 @@ def train(model_name, batch_size, num_epochs, lr, parallel):
     writer = SummaryWriter(log_dir=f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}")
 
 
-    # ----------------------------------
-    # Pre training validation test
-    model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for inputs, labels in val_loader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+    validate_model(model, val_loader, device, writer)
 
-    val_accuracy = 100 * correct / total
-    print(f"Pre-Training Validation Accuracy: {val_accuracy:.2f}%")
-    writer.add_scalar("Validation Accuracy", val_accuracy, 0)
-    # -----------------------------------------------------------
+    for epoch in range(num_epochs):
+        train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer)
+
+    validate_model(model, val_loader, device, num_epochs, writer)
+
+    torch.save(model.state_dict(), f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}/checkpoint.pth")
+    writer.close()
+    
+
+def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer):
+    model.train()
     running_loss = 0.0
     running_correct = 0
     running_total = 0
+    for inputs, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
+        inputs, labels = inputs.to(device), labels.to(device)
 
-    for epoch in range(num_epochs):
-        model.train()
-        batch = 0
+        outputs = model(inputs)
+        loss = criterion(outputs, labels) 
 
-        for inputs, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
-            # Currently processing batch 
-            inputs, labels = inputs.to(device), labels.to(device)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-            outputs = model(inputs)
-            loss = criterion(outputs, labels) # Single batch loss
+        _, predicted = torch.max(outputs,1)
+        running_correct += (predicted == labels).sum().item()
+        running_total += labels.size(0)
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+        running_loss += loss.item()
+    accuracy = 100 * running_correct / running_total
+    writer.add_scalar('Training Loss', running_loss / running_total, epoch + 1 )
+    writer.add_scalar('Training Accuracy', accuracy, epoch + 1)
 
-            _, predicted = torch.max(outputs,1)
-            running_correct += (predicted == labels).sum().item()
-            running_total += labels.size(0)
-
-            running_loss += loss.item()
-
-        accuracy = 100 * running_correct / running_total
-        writer.add_scalar('Training Loss', running_loss / running_total, epoch + 1 )
-        writer.add_scalar('Training Accuracy', accuracy, epoch + 1)
-        running_loss = 0.0
-        running_correct = 0
-        running_total = 0
-
-
-        # print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(train_loader):.4f}, Accuracy: {100 * correct / total:.2f}%")
-        # writer.add_scalar('Epoch Accuracy (Training)', 100 * correct / total, epoch * len(tr))
-        # if( epoch % 1 == 0 ):
-        #     model.eval()
-        #     correct = 0
-        #     total = 0
-        #     with torch.no_grad():
-        #         for inputs, labels in val_loader:
-        #             inputs, labels = inputs.to(device), labels.to(device)
-        #             outputs = model(inputs)
-        #             _, predicted = torch.max(outputs, 1)
-        #             total += labels.size(0)
-        #             correct += (predicted == labels).sum().item()
-
-        #     print(f"Validation Accuracy in epoch {epoch}: {100 * correct / total:.2f}%")
-        #     writer.add_scalar('Validation Accuracy', 100 * correct / total, epoch)
-
+def validate_model(model, val_loader, device, curr_epoch, writer):
     model.eval()
     correct = 0
     total = 0
@@ -132,9 +101,8 @@ def train(model_name, batch_size, num_epochs, lr, parallel):
 
     val_accuracy = 100 * correct / total
     print(f"Validation Accuracy: {val_accuracy:.2f}%")
-    writer.add_scalar("Validation Accuracy", val_accuracy, num_epochs)
-    torch.save(model.state_dict(), f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}/checkpoint.pth")
-    writer.close()
+    writer.add_scalar("Validation Accuracy", val_accuracy, curr_epoch)
     
+
 if __name__ == "__main__":
     main()
