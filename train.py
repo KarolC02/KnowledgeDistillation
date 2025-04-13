@@ -14,7 +14,16 @@ from utils.arg_utils import get_args
 
 def main():
     args = get_args()
+    model_name = args.model
+    lr = args.lr
+    batch_size = args.batch_size
+    num_epochs = args.num_epochs
+    parallel = args.parallel
+    train(model_name, batch_size, num_epochs, lr, parallel)
+    
 
+
+def train(model_name, batch_size, num_epochs, lr, parallel):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
@@ -25,15 +34,7 @@ def main():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-
-
-    model_name = args.model
-    lr = args.lr
-    batch_size = args.batch_size
-    num_epochs = args.num_epochs
-    parallel = args.parallel
-
-    model = model_dict[args.model]()
+    model = model_dict[model_name]()
 
     if(parallel):
         model = nn.DataParallel(model)
@@ -134,6 +135,6 @@ def main():
     writer.add_scalar("Validation Accuracy", val_accuracy, num_epochs)
     torch.save(model.state_dict(), f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}/checkpoint.pth")
     writer.close()
-
+    
 if __name__ == "__main__":
     main()
