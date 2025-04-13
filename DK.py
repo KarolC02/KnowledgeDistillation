@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from train import validate_model
+from datetime import datetime
 
 def main():
     # get args
@@ -32,12 +33,12 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # Check if we have this model saved
-    full_model_name = f"tiny_image_net_{teacher_model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}"
+    full_model_name = f"tiny_image_net_{teacher_model_name}_lr=0.001_epochs=10_batch_size=128"
     model_path = os.path.join("logs", full_model_name, "checkpoint.pth")
     if os.path.isfile(model_path):
-        print(f"Model {teacher_model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size} found in the logs directory. No need for training the teacher.")
+        print(f"Model {full_model_name} found in the logs directory. No need for training the teacher.")
     else:
-        print(f"Model {teacher_model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size} has not been found in the logs directory. initializing training")
+        print(f"Model {full_model_name} has not been found in the logs directory. initializing training")
         train(teacher_model_name, batch_size, num_epochs, lr, parallel)
         print(f"Training successful, proceeding with distillation {teacher_model_name} -> {student_model_name}")
     # Check if we have logits of this model
@@ -57,6 +58,8 @@ def main():
 
     train_dataset = datasets.ImageFolder("datasets/tiny-imagenet-200/train", transform=transform)
     train_loader = DataLoader(train_dataset, batch_size = batch_size , shuffle=False, num_workers= 16, pin_memory=True)
+    val_dataset = datasets.ImageFolder("datasets/tiny-imagenet-200/val/images", transform=transform)
+    val_loader = DataLoader(val_dataset, batch_size = batch_size, shuffle=False, num_workers = 16, pin_memory=True)
 
     if os.path.isfile(logits_file):
         print(f"Found logits from the trained model: {full_model_name}, no need to forward pass")
@@ -89,21 +92,24 @@ def main():
 
     student_model = model_dict[student_model_name]()
     optimizer = torch.optim.Adam(student_model.parameters(), lr = lr)
+    if(parallel):
+        student_model = nn.DataParallel(student_model)
     student_model.to(device)
 
-    writer = SummaryWriter(log_dir=f"logs/distillation_{teacher_model_name}_to_{student_model_name}_T={T}_alpha={alpha}")
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    writer = SummaryWriter(log_dir=f"logs/distillation_{teacher_model_name}_to_{student_model_name}_T={T}_alpha={alpha}_{timestamp}")
+
+    validate_model(student_model, val_loader, device, curr_epoch=0, writer=writer)
 
     for epoch in range(num_epochs):
         train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epochs, student_model, writer, T, alpha)
 
 
-    val_dataset = datasets.ImageFolder("datasets/tiny-imagenet-200/val/images", transform=transform)
-    val_loader = DataLoader(val_dataset, batch_size = batch_size , shuffle=False, num_workers = 16, pin_memory=True)
 
-    validate_model(student_model, val_loader, device, curr_epoch=epoch, writer=writer)
+    validate_model(student_model, val_loader, device, num_epochs, writer=writer)
 
     
-    save_path = os.path.join("saved_models", f"distilled_{teacher_model_name}_to_{student_model_name}.pth")
+    save_path = os.path.join("saved_models", f"distilled_{teacher_model_name}_to_{student_model_name}_batch_size={batch_size}_lr={lr}.pth")
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     torch.save(student_model.state_dict(), save_path)
     print(f"Saved distilled student model at {save_path}")
@@ -147,18 +153,21 @@ class DistillationDataset(Dataset):
 
 def distillation_loss(student_logits, teacher_logits, labels, T, alpha):
     hard_loss = F.cross_entropy(student_logits, labels)
-    soft_student = F.log_softmax(student_logits / T, dim = 1)
-    soft_teacher = F.log_softmax(teacher_logits / T, dim = 1)
+    soft_student = F.log_softmax(student_logits / T, dim=1)
+    soft_teacher = F.softmax(teacher_logits / T, dim=1)  
     soft_loss = F.kl_div(soft_student, soft_teacher, reduction='batchmean') * (T * T)
     return alpha * hard_loss + (1 - alpha) * soft_loss
+
 
 def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epochs, model, writer, T, alpha):
     model.train()
     running_loss = 0.0
     running_correct = 0
     running_total = 0
+    num_batches = 0
+    total_batches = len(train_loader)
 
-    for inputs, labels, teacher_logits in tqdm(train_loader, desc=f"Distill Epoch {epoch+1}/{num_epochs}"):
+    for batch_idx, (inputs, labels, teacher_logits) in enumerate(tqdm(train_loader, desc=f"Distill Epoch {epoch+1}/{num_epochs}")):
         inputs = inputs.to(device)
         labels = labels.to(device)
         teacher_logits = teacher_logits.to(device)
@@ -176,10 +185,19 @@ def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epo
         running_total += labels.size(0)
 
         running_loss += loss.item()
+        num_batches += 1
 
+        if (batch_idx + 1) % 100 == 0:
+            batch_accuracy = 100 * running_correct / running_total
+            print(f"Batch {batch_idx+1}/{total_batches}: Loss = {loss.item():.4f}, Accuracy = {batch_accuracy:.2f}%")
+
+    training_loss = running_loss / running_total
     accuracy = 100 * running_correct / running_total
-    writer.add_scalar('Distillation Training Loss', running_loss / running_total, epoch + 1)
-    writer.add_scalar('Distillation Training Accuracy', accuracy, epoch + 1)
+
+    writer.add_scalar('Training Loss', training_loss, epoch + 1)
+    writer.add_scalar('Training Accuracy', accuracy, epoch + 1)
+
+
 
 
 if __name__ == "__main__":

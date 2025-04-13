@@ -12,7 +12,7 @@ from models.models import model_dict
 from utils.arg_utils import get_args
 import random
 import numpy as np
-
+from datetime import datetime
 
 def main():
     args = get_args()
@@ -52,7 +52,8 @@ def train(model_name, batch_size, num_epochs, lr, parallel):
     train_loader = DataLoader(train_dataset, batch_size = batch_size , shuffle=True, num_workers= 16, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size = batch_size , shuffle=False, num_workers = 16, pin_memory=True)
 
-    writer = SummaryWriter(log_dir=f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}")
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    writer = SummaryWriter(log_dir=f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}_{timestamp}")
 
 
     validate_model(model, val_loader, device, 0, writer)
