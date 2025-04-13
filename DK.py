@@ -102,7 +102,7 @@ def main():
     validate_model(student_model, val_loader, device, curr_epoch=0, writer=writer)
 
     for epoch in range(num_epochs):
-        train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epochs, student_model, writer, T, alpha)
+        train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epochs, student_model, writer, T, alpha, val_loader)
 
 
 
@@ -159,7 +159,7 @@ def distillation_loss(student_logits, teacher_logits, labels, T, alpha):
     return alpha * hard_loss + (1 - alpha) * soft_loss
 
 
-def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epochs, model, writer, T, alpha):
+def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epochs, model, writer, T, alpha, val_loader):
     model.train()
     running_loss = 0.0
     running_correct = 0
@@ -190,6 +190,9 @@ def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epo
         if (batch_idx + 1) % 100 == 0:
             batch_accuracy = 100 * running_correct / running_total
             print(f"Batch {batch_idx+1}/{total_batches}: Loss = {loss.item():.4f}, Accuracy = {batch_accuracy:.2f}%")
+
+        if( (epoch + 1) % 5 == 0 ):
+            validate_model(model, val_loader, device, num_epochs, writer=writer)
 
     training_loss = running_loss / running_total
     accuracy = 100 * running_correct / running_total
