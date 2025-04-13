@@ -10,10 +10,13 @@ from torch.utils.tensorboard import SummaryWriter
 from random import randint
 from models.models import model_dict
 from utils.arg_utils import get_args
+import random
+import numpy as np
 
 
 def main():
     args = get_args()
+    set_seed()
     model_name = args.model
     lr = args.lr
     batch_size = args.batch_size
@@ -103,6 +106,14 @@ def validate_model(model, val_loader, device, curr_epoch, writer):
     print(f"Validation Accuracy: {val_accuracy:.2f}%")
     writer.add_scalar("Validation Accuracy", val_accuracy, curr_epoch)
     
+
+def set_seed(seed=42):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 if __name__ == "__main__":
     main()
