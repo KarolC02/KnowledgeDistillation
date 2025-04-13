@@ -130,4 +130,5 @@ with torch.no_grad():
 val_accuracy = 100 * correct / total
 print(f"Validation Accuracy: {val_accuracy:.2f}%")
 writer.add_scalar("Validation Accuracy", val_accuracy, num_epochs)
+torch.save(model.state_dict(), f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}/checkpoint.pth")
 writer.close()
