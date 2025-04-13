@@ -7,7 +7,7 @@ model_dict = {
     "resnet50_pretrained": lambda: resnet50(weights=ResNet50_Weights.DEFAULT),
     "AlexNet_pretrained": lambda: alexnet(weights=AlexNet_Weights.DEFAULT),
     "ConvNeXt_pretrained": lambda: convnext_base(weights = ConvNeXt_Base_Weights.DEFAULT),
-    "vit_b_16": lambda: convnext_base(weights = ViT_B_16_Weights.DEFAULT),
+    "vit_b_16": lambda: vit_b_16(weights = ViT_B_16_Weights.DEFAULT),
     "myCNN": myCNN,
     "fastCNN": fastCNN,
     "OneLayerNN": OneLayerNN
