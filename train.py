@@ -52,7 +52,7 @@ def train(model_name, batch_size, num_epochs, lr, parallel):
     writer = SummaryWriter(log_dir=f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}")
 
 
-    validate_model(model, val_loader, device, writer)
+    validate_model(model, val_loader, device, 0, writer)
 
     for epoch in range(num_epochs):
         train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer)
