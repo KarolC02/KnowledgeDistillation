@@ -191,8 +191,8 @@ def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epo
             batch_accuracy = 100 * running_correct / running_total
             print(f"Batch {batch_idx+1}/{total_batches}: Loss = {loss.item():.4f}, Accuracy = {batch_accuracy:.2f}%")
 
-        if( (epoch + 1) % 5 == 0 ):
-            validate_model(model, val_loader, device, num_epochs, writer=writer)
+    if( (epoch + 1) % 5 == 0 ):
+        validate_model(model, val_loader, device, num_epochs, writer=writer)
 
     training_loss = running_loss / running_total
     accuracy = 100 * running_correct / running_total
