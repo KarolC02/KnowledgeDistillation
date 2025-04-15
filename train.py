@@ -59,7 +59,7 @@ def train(model_name, batch_size, num_epochs, lr, parallel):
     validate_model(model, val_loader, device, 0, writer)
 
     for epoch in range(num_epochs):
-        train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer)
+        train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer, val_loader)
 
     validate_model(model, val_loader, device, num_epochs, writer)
 
@@ -67,7 +67,7 @@ def train(model_name, batch_size, num_epochs, lr, parallel):
     writer.close()
     
 
-def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer):
+def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer, val_loader):
     model.train()
     running_loss = 0.0
     running_correct = 0
@@ -90,6 +90,10 @@ def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, c
     accuracy = 100 * running_correct / running_total
     writer.add_scalar('Training Loss', running_loss / running_total, epoch + 1 )
     writer.add_scalar('Training Accuracy', accuracy, epoch + 1)
+
+    if( (epoch) % 5 == 0 ):
+        validate_model(model, val_loader, device, epoch, writer=writer)
+
 
 def validate_model(model, val_loader, device, curr_epoch, writer):
     model.eval()
