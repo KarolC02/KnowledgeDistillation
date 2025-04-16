@@ -99,7 +99,7 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     writer = SummaryWriter(log_dir=f"logs/distillation_{teacher_model_name}_to_{student_model_name}_T={T}_alpha={alpha}_{timestamp}")
 
-    validate_model(student_model, val_loader, device, curr_epoch=0, writer=writer)
+    # validate_model(student_model, val_loader, device, curr_epoch=0, writer=writer)
 
     for epoch in range(num_epochs):
         train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epochs, student_model, writer, T, alpha, val_loader)
@@ -109,7 +109,7 @@ def main():
     validate_model(student_model, val_loader, device, num_epochs, writer=writer)
 
     
-    save_path = os.path.join("saved_models", f"distilled_{teacher_model_name}_to_{student_model_name}_batch_size={batch_size}_lr={lr}.pth")
+    save_path = os.path.join("saved_models", f"distilled_{teacher_model_name}_to_{student_model_name}_batch_size={batch_size}_lr={lr}/checkpoint.pth")
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     torch.save(student_model.state_dict(), save_path)
     print(f"Saved distilled student model at {save_path}")
@@ -187,9 +187,9 @@ def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epo
         running_loss += loss.item()
         num_batches += 1
 
-        if (batch_idx + 1) % 100 == 0:
-            batch_accuracy = 100 * running_correct / running_total
-            print(f"Batch {batch_idx+1}/{total_batches}: Loss = {loss.item():.4f}, Accuracy = {batch_accuracy:.2f}%")
+        # if (batch_idx + 1) % 100 == 0:
+        #     batch_accuracy = 100 * running_correct / running_total
+        #     print(f"Batch {batch_idx+1}/{total_batches}: Loss = {loss.item():.4f}, Accuracy = {batch_accuracy:.2f}%")
 
     if( (epoch) % 5 == 0 ):
         validate_model(model, val_loader, device, epoch, writer=writer)
