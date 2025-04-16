@@ -13,6 +13,7 @@ from utils.arg_utils import get_args
 import random
 import numpy as np
 from datetime import datetime
+import os
 
 def main():
     args = get_args()
@@ -63,7 +64,9 @@ def train(model_name, batch_size, num_epochs, lr, parallel):
 
     validate_model(model, val_loader, device, num_epochs, writer)
 
-    torch.save(model.state_dict(), f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}/checkpoint.pth")
+    save_dir = f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}"
+    os.makedirs(save_dir, exist_ok=True)
+    torch.save(model.state_dict(), f"{save_dir}/checkpoint.pth")
     writer.close()
     
 
