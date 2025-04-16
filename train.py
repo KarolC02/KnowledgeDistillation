@@ -112,7 +112,7 @@ def validate_model(model, val_loader, device, curr_epoch, writer):
 
     val_accuracy = 100 * correct / total
     print(f"Validation Accuracy: {val_accuracy:.2f}%")
-    writer.add_scalar("Validation Accuracy", val_accuracy, curr_epoch)
+    writer.add_scalar("Validation Accuracy", val_accuracy, curr_epoch + 1)
     
 
 def set_seed(seed=42):
