@@ -164,7 +164,7 @@ def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epo
     running_total = 0
     num_batches = 0
 
-    for batch_idx, (inputs, labels, teacher_logits) in enumerate(tqdm(train_loader, desc=f"Distill Epoch {epoch+1}/{num_epochs}")):
+    for inputs, labels, teacher_logits in tqdm(train_loader, desc=f"Distill Epoch {epoch+1}/{num_epochs}"):
         inputs = inputs.to(device)
         labels = labels.to(device)
         teacher_logits = teacher_logits.to(device)
