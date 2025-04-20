@@ -16,7 +16,7 @@ from train import validate_model
 from datetime import datetime
 
 def main():
-    # get args
+
     args = get_args()
     set_seed()
     teacher_model_name = args.teacher_model
@@ -26,13 +26,11 @@ def main():
     batch_size = args.batch_size
     lr = args.lr
     num_epochs = args.num_epochs
-    logdir = args.logdir
     parallel = args.parallel
     
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    # Check if we have this model saved
     full_model_name = f"tiny_image_net_{teacher_model_name}_lr=0.001_epochs=10_batch_size=128"
     model_path = os.path.join("logs", full_model_name, "checkpoint.pth")
     if os.path.isfile(model_path):
@@ -41,7 +39,7 @@ def main():
         print(f"Model {full_model_name} has not been found in the logs directory. initializing training")
         train(teacher_model_name, batch_size, num_epochs, lr, parallel)
         print(f"Training successful, proceeding with distillation {teacher_model_name} -> {student_model_name}")
-    # Check if we have logits of this model
+
     logits_file = os.path.join(
         "saved_logits",
         full_model_name,
@@ -69,7 +67,7 @@ def main():
         state_dict = torch.load(model_path)
         new_state_dict = {}
         for k, v in state_dict.items():
-            new_key = k.replace('module.', '')  # Remove 'module.' if present
+            new_key = k.replace('module.', '') 
             new_state_dict[new_key] = v
 
         model.load_state_dict(new_state_dict)
@@ -165,7 +163,6 @@ def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epo
     running_correct = 0
     running_total = 0
     num_batches = 0
-    total_batches = len(train_loader)
 
     for batch_idx, (inputs, labels, teacher_logits) in enumerate(tqdm(train_loader, desc=f"Distill Epoch {epoch+1}/{num_epochs}")):
         inputs = inputs.to(device)
@@ -186,10 +183,6 @@ def train_one_epoch_distillation(train_loader, optimizer, device, epoch, num_epo
 
         running_loss += loss.item()
         num_batches += 1
-
-        # if (batch_idx + 1) % 100 == 0:
-        #     batch_accuracy = 100 * running_correct / running_total
-        #     print(f"Batch {batch_idx+1}/{total_batches}: Loss = {loss.item():.4f}, Accuracy = {batch_accuracy:.2f}%")
 
     if( (epoch) % 5 == 0 ):
         validate_model(model, val_loader, device, epoch, writer=writer)
