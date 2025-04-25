@@ -28,5 +28,5 @@
 # ⚙️ Other important Commands:
 - `nvidia-smi` to print out current status of NVIDIA GPUs
 - `watch -n 1 nvidia-smi` to print out the status every second (**Useful on the parallel tmux terminal**)
-- `tensorboard --logdir=logs --port=6006` starts TensorBoard server on port 6006
+- `tensorboard --logdir=results --port=6006` starts TensorBoard server on port 6006
 - `ssh -L 6006:localhost:6006 user@server_address` to forward server's 6006 to local 6006 (Run this on your local machine, not on the server/VM)

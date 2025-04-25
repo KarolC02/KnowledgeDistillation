@@ -11,7 +11,7 @@ from datasets import get_dataloaders
 from utils.seed_utils import set_seed
 from trainer.train_loop import train_one_epoch
 from trainer.val_loop import validate_model
-
+from utils.adapt_model import adapt_model_to_classes
 
 def main():
     args = get_args()
@@ -24,6 +24,7 @@ def train(args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     model = model_dict[args.model]()
+    model = adapt_model_to_classes(model, num_classes=200)
     if args.parallel:
         model = nn.DataParallel(model)
     model.to(device)
