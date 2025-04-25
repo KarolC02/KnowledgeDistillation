@@ -18,7 +18,7 @@
 # )
 
 models=(
-"resnet18_pretrained" "resnet18"
+"resnet18_pretrained"
 )
 
 batch_size=128
