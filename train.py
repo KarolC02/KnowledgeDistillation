@@ -1,127 +1,77 @@
-# Import dependencies
-from tqdm import tqdm
-import torch
-from torch import nn
-from torch.utils.data import DataLoader
-from torchvision.utils import make_grid
-from torchvision import models, datasets
-from torchvision import transforms 
-from torch.utils.tensorboard import SummaryWriter
-from random import randint
-from models.models import model_dict
-from utils.arg_utils import get_args
+import os
 import random
 import numpy as np
 from datetime import datetime
-import os
+import torch
+from torch import nn
+from torch.utils.tensorboard import SummaryWriter
+from models.models import model_dict
+from utils.arg_utils import get_args
+from datasets import get_dataloaders
+from utils.seed_utils import set_seed
+from trainer.train_loop import train_one_epoch
+from trainer.val_loop import validate_model
+
 
 def main():
     args = get_args()
-    set_seed()
-    model_name = args.model
-    lr = args.lr
-    batch_size = args.batch_size
-    num_epochs = args.num_epochs
-    parallel = args.parallel
-    train(model_name, batch_size, num_epochs, lr, parallel)
-    
+    set_seed(args.seed)
+    train(args)
 
 
-def train(model_name, batch_size, num_epochs, lr, parallel):
+def train(args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
-
-    model = model_dict[model_name]()
-
-    if(parallel):
+    model = model_dict[args.model]()
+    if args.parallel:
         model = nn.DataParallel(model)
     model.to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss()
 
-    train_dataset = datasets.ImageFolder("datasets/tiny-imagenet-200/train", transform=transform)
-    val_dataset = datasets.ImageFolder("datasets/tiny-imagenet-200/val/images", transform=transform)
-
-    train_loader = DataLoader(train_dataset, batch_size = batch_size , shuffle=True, num_workers= 16, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size = batch_size , shuffle=False, num_workers = 16, pin_memory=True)
+    train_loader, val_loader = get_dataloaders(args.dataset, args.batch_size, args.num_workers)
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    writer = SummaryWriter(log_dir=f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}_{timestamp}")
-
-
-    # validate_model(model, val_loader, device, 0, writer)
-
-    for epoch in range(num_epochs):
-        train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer, val_loader)
-
-    validate_model(model, val_loader, device, num_epochs, writer)
-
-    save_dir = f"logs/tiny_image_net_{model_name}_lr={lr}_epochs={num_epochs}_batch_size={batch_size}"
+    save_dir = os.path.join(
+        args.logdir, args.dataset, args.model,
+        f"lr={args.lr}_bs={args.batch_size}_epochs={args.num_epochs}", timestamp
+    )
     os.makedirs(save_dir, exist_ok=True)
-    torch.save(model.state_dict(), f"{save_dir}/checkpoint.pth")
+
+    writer = SummaryWriter(log_dir=os.path.join(save_dir, "tensorboard"))
+
+    start_epoch = 0
+
+    if args.resume_from_checkpoint:
+        checkpoint = torch.load(args.resume_from_checkpoint)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        start_epoch = checkpoint["epoch"] + 1
+        print(f"Resumed training from checkpoint at epoch {start_epoch}")
+
+    for epoch in range(start_epoch, args.num_epochs):
+        train_one_epoch(train_loader, optimizer, device, epoch, args.num_epochs, model, criterion, writer, val_loader)
+
+        if (epoch + 1) % args.save_checkpoint_every == 0:
+            checkpoint_path = os.path.join(save_dir, f"checkpoint_epoch_{epoch+1}.pth")
+            torch.save({
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict()
+            }, checkpoint_path)
+
+    validate_model(model, val_loader, device, args.num_epochs, writer)
+
+    final_checkpoint_path = os.path.join(save_dir, "final_checkpoint.pth")
+    torch.save({
+        "epoch": args.num_epochs,
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict()
+    }, final_checkpoint_path)
+
     writer.close()
-    
-
-def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer, val_loader):
-    model.train()
-    running_loss = 0.0
-    running_correct = 0
-    running_total = 0
-    for inputs, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
-        inputs, labels = inputs.to(device), labels.to(device)
-
-        outputs = model(inputs)
-        loss = criterion(outputs, labels) 
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        _, predicted = torch.max(outputs,1)
-        running_correct += (predicted == labels).sum().item()
-        running_total += labels.size(0)
-
-        running_loss += loss.item()
-    accuracy = 100 * running_correct / running_total
-    writer.add_scalar('Training Loss', running_loss / running_total, epoch + 1 )
-    writer.add_scalar('Training Accuracy', accuracy, epoch + 1)
-
-    if( (epoch) % 5 == 0 ):
-        validate_model(model, val_loader, device, epoch, writer=writer)
-
-
-def validate_model(model, val_loader, device, curr_epoch, writer):
-    model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for inputs, labels in val_loader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-
-    val_accuracy = 100 * correct / total
-    print(f"Validation Accuracy: {val_accuracy:.2f}%")
-    writer.add_scalar("Validation Accuracy", val_accuracy, curr_epoch + 1)
-    
-
-def set_seed(seed=42):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
 
 if __name__ == "__main__":
     main()

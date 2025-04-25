@@ -38,7 +38,7 @@ def get_args():
     parser.add_argument(
         "--logdir",
         type=str,
-        default="logs/tiny_image_net",
+        default="results",
         help="Directory to save TensorBoard logs"
     )
 
@@ -46,6 +46,41 @@ def get_args():
         "--parallel",
         action="store_true",
         help="Run parallel on multiple GPUs"
+    )
+
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed (default: 42)"
+    )
+
+    parser.add_argument(
+        "--num_workers",
+        type=int,
+        default=16,
+        help="Number of workers for dataloaders (default: 16)"
+    )
+
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="tiny-imagenet",
+        help="Dataset to train on a dataset"
+    )
+
+    parser.add_argument(
+        "--save_checkpoint_every",
+        type=int,
+        default=5,
+        help="Save checkpoint every N epochs (default: 5)"
+    )
+
+    parser.add_argument(
+        "--resume_from_checkpoint",
+        type=str,
+        default=None,
+        help="Path to a checkpoint file to resume training (default: None)"
     )
 
     return parser.parse_args()
