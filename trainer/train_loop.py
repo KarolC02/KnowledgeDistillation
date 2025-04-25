@@ -28,5 +28,5 @@ def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, c
     writer.add_scalar('Training Loss', running_loss / running_total, epoch + 1)
     writer.add_scalar('Training Accuracy', accuracy, epoch + 1)
 
-    if (epoch + 1) % validate_every == 0:
+    if epoch in {0, 1, 2} or (epoch + 1) % validate_every == 0:
         validate_model(model, val_loader, device, epoch, writer)
