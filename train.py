@@ -33,10 +33,11 @@ def train(args):
 
     train_loader, val_loader = get_dataloaders(args.dataset, args.batch_size, args.num_workers)
 
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     save_dir = os.path.join(
-        args.logdir, args.dataset, args.model,
-        f"lr={args.lr}_bs={args.batch_size}_epochs={args.num_epochs}", timestamp
+        args.logdir,
+        args.dataset,
+        args.model,
+        f"lr={args.lr:.0e}_bs={args.batch_size}_epochs={args.num_epochs}_parallel={args.parallel}"
     )
     os.makedirs(save_dir, exist_ok=True)
 
