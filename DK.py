@@ -98,6 +98,7 @@ def main():
     for epoch in range(args.num_epochs):
         train_one_epoch_distillation(train_loader, optimizer, student, epoch, args.num_epochs, writer, args.temperature, args.alpha, val_loader)
 
+    validate_model(args.num_epochs - 1)
     out_path = os.path.join(args.modeldir, f"distilled_{args.teacher_model}_to_{args.student_model}.pth")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     torch.save(student.state_dict(), out_path)
