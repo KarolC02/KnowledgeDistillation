@@ -36,8 +36,8 @@ def get_args():
     parser.add_argument("--teacher_num_epochs", type=int, default=20,
         help="Number of epochs to train the teacher (default: 20)")
 
-    parser.add_argument("--dataset", type=str, default="tiny-imagenet-200",
-        help="Dataset name (default: tiny-imagenet-200)")
+    parser.add_argument("--dataset", type=str, default="tiny-imagenet",
+        help="Dataset name (default: tiny-imagenet)")
 
     parser.add_argument("--logdir", type=str, default="results",
         help="Base directory for all logs and experiments")
