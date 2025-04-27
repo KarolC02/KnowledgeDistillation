@@ -17,6 +17,7 @@
 | **Split pane vertically** | `Ctrl + b`, then `%` |
 | **Split pane horizontally** | `Ctrl + b`, then `"` |
 | **Kill the current pane** | `Ctrl + b`, then `x` (confirm with `y`) |
+| **Switch between tmux sessions** | `Ctrl + b`, then `s` |
 
 ---
 
