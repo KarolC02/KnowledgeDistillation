@@ -89,8 +89,8 @@ def main():
 
     log_path = os.path.join(
         args.logdir,
-        "distill",
         args.dataset,
+        "distill",
         f"{args.teacher_model}_to_{args.student_model}_T={args.temperature}_alpha={args.alpha}"
     )
     writer = SummaryWriter(log_dir=log_path)
@@ -174,8 +174,8 @@ def train_one_epoch_distillation(loader, optimizer, model, epoch, total_epochs, 
         total += labels.size(0)
 
     acc = 100.0 * correct / total
-    writer.add_scalar("Distill/TrainLoss", total_loss / total, epoch+1)
-    writer.add_scalar("Distill/TrainAcc", acc, epoch+1)
+    writer.add_scalar("Training Loss", total_loss / total, epoch+1)
+    writer.add_scalar("Training Accuracy", acc, epoch+1)
 
     if epoch in {0, 1, 2} or (epoch + 1) % 5 == 0:
         validate_model(model, val_loader, device, epoch, writer)
