@@ -1,7 +1,7 @@
 #!/bin/bash
 
 teachers=("ConvNeXt_pretrained")
-students=("shufflenet_v2_x1_0_pretrained")
+students=("AlexNet")
 
 dataset="tiny-imagenet"
 logdir="results"

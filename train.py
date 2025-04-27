@@ -70,8 +70,6 @@ def train(args):
                 "optimizer_state_dict": optimizer.state_dict()
             }, checkpoint_path)
 
-    validate_model(model, val_loader, device, args.num_epochs, writer)
-
     final_checkpoint_path = os.path.join(save_dir, "final_checkpoint.pth")
     torch.save({
         "epoch": args.num_epochs,
