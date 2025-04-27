@@ -54,7 +54,7 @@ def main():
         checkpoint = torch.load(teacher_ckpt)
         state_dict = checkpoint["model_state_dict"]
         state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-        
+
         dummy_input = torch.randn(1, 3, 224, 224).to(next(model.parameters()).device)
         output = model(dummy_input)
         assert output.shape[1] == 200, f"Teacher model output size {output.shape[1]} does not match 200 classes. Check model adaptation."
@@ -66,7 +66,8 @@ def main():
         train_loader, _ = get_dataloaders(args.dataset, args.teacher_batch_size, shuffle_train=False)
         save_logits(model, train_loader, args.parallel, logits_path, args)
         print("[INFO] Logits saved.")
-
+    else:
+        print("Found logits")
     train_dataset = DistillationDataset(
         root="datasets/tiny-imagenet-200/train", logits_path=logits_path, transform=transform
     )
