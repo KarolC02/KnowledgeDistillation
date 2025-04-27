@@ -19,11 +19,8 @@ def main():
     args = get_args()
     set_seed()
 
-    dataset_root = f"datasets/{args.dataset}" 
-    print(dataset_root)
     transform = get_standard_imagenet_transform()
 
-    # Train teacher if not found
     teacher_ckpt_dir = os.path.join(
         args.logdir,
         args.dataset,
@@ -31,13 +28,11 @@ def main():
         f"lr={args.teacher_lr:.0e}_bs={args.teacher_batch_size}_epochs={args.teacher_num_epochs}_parallel={args.parallel}"
     )
     teacher_ckpt = os.path.join(teacher_ckpt_dir, args.teacher_checkpoint_name)
-    print(teacher_ckpt)
-    # Clean up any accidental bash escape issues    
     teacher_ckpt = teacher_ckpt.replace('\\=', '=')
 
     if not os.path.isfile(teacher_ckpt):
         print("[INFO] Teacher checkpoint not found. Training teacher...")
-        train_args = args  
+        train_args = args
         train_args.model = args.teacher_model
         train_args.batch_size = args.teacher_batch_size
         train_args.lr = args.teacher_lr
@@ -48,7 +43,6 @@ def main():
     else:
         print("[INFO] Found teacher checkpoint. Skipping training.")
 
-    # Generate logits if needed
     logits_filename = f"logits_bs={args.teacher_batch_size}_lr={args.teacher_lr:.0e}_epochs={args.teacher_num_epochs}_adapted={args.adapt_model}_ckpt={args.teacher_checkpoint_name.replace('.pth', '')}.pth"
     logits_path = os.path.join(args.logits_dir, args.dataset, args.teacher_model, logits_filename)
 
@@ -63,24 +57,16 @@ def main():
         model.load_state_dict(state_dict)
         model.eval()
 
-        train_loader = DataLoader(
-            datasets.ImageFolder(os.path.join(dataset_root, "train"), transform=transform),
-            batch_size=args.teacher_batch_size,
-            shuffle=False, num_workers=16, pin_memory=True
-        )
+        train_loader, _ = get_dataloaders(args.dataset, args.teacher_batch_size, shuffle_train=False)
         save_logits(model, train_loader, args.parallel, logits_path, args)
         print("[INFO] Logits saved.")
 
-    # Load distillation dataset
     train_dataset = DistillationDataset(
-        os.path.join(dataset_root, "train"), logits_path, transform=transform
+        root="datasets/tiny-imagenet-200/train", logits_path=logits_path, transform=transform
     )
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=16, pin_memory=True)
 
-    val_loader = DataLoader(
-        datasets.ImageFolder(os.path.join(dataset_root, "val/images"), transform=transform),
-        batch_size=args.batch_size, shuffle=False, num_workers=16, pin_memory=True
-    )
+    _, val_loader = get_dataloaders(args.dataset, args.batch_size, shuffle_train=False)
 
     student = model_dict[args.student_model]()
     if args.parallel:
@@ -120,7 +106,7 @@ def save_logits(model, loader, parallel, path, args):
             inputs = inputs.to(device)
             logits = model(inputs)
             all_logits.append(logits.cpu())
-    
+
     os.makedirs(os.path.dirname(path), exist_ok=True)
     torch.save({
         "logits": torch.cat(all_logits),
@@ -132,7 +118,6 @@ def save_logits(model, loader, parallel, path, args):
         "teacher_model": args.teacher_model,
         "dataset": args.dataset,
     }, path)
-
 
 
 class DistillationDataset(Dataset):

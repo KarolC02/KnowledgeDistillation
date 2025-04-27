@@ -4,7 +4,7 @@ import os
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
-def get_dataloaders(dataset_name, batch_size, num_workers=16):
+def get_dataloaders(dataset_name, batch_size, num_workers=16, shuffle_train=True):
     if dataset_name.lower() != "tiny-imagenet":
         raise NotImplementedError(f"Dataset '{dataset_name}' is not supported.")
 
@@ -22,7 +22,7 @@ def get_dataloaders(dataset_name, batch_size, num_workers=16):
     train_dataset = datasets.ImageFolder(train_dir, transform=transform)
     val_dataset = datasets.ImageFolder(val_dir, transform=transform)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle_train,
                               num_workers=num_workers, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,
                             num_workers=num_workers, pin_memory=True)
