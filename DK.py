@@ -177,7 +177,7 @@ def train_one_epoch_distillation(loader, optimizer, model, epoch, total_epochs, 
     writer.add_scalar("Distill/TrainLoss", total_loss / total, epoch+1)
     writer.add_scalar("Distill/TrainAcc", acc, epoch+1)
 
-    if (epoch + 1) % 5 == 0:
+    if epoch in {0, 1, 2} or (epoch + 1) % 5 == 0:
         validate_model(model, val_loader, device, epoch, writer)
 
 
