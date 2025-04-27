@@ -20,6 +20,7 @@ def main():
     set_seed()
 
     dataset_root = f"datasets/{args.dataset}" 
+    print(dataset_root)
     transform = get_standard_imagenet_transform()
 
     # Train teacher if not found
