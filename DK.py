@@ -23,13 +23,17 @@ def main():
     transform = get_standard_imagenet_transform()
 
     # Train teacher if not found
-    teacher_ckpt = os.path.join(
+    teacher_ckpt_dir = os.path.join(
         args.logdir,
         args.dataset,
         args.teacher_model,
-        f"lr={args.teacher_lr:.0e}_bs={args.teacher_batch_size}_epochs={args.teacher_num_epochs}_parallel={args.parallel}",
-        args.teacher_checkpoint_name
+        f"lr={args.teacher_lr:.0e}_bs={args.teacher_batch_size}_epochs={args.teacher_num_epochs}_parallel={args.parallel}"
     )
+    teacher_ckpt = os.path.join(teacher_ckpt_dir, args.teacher_checkpoint_name)
+
+    # Clean up any accidental bash escape issues    
+    teacher_ckpt = teacher_ckpt.replace('\\=', '=')
+
     if not os.path.isfile(teacher_ckpt):
         print("[INFO] Teacher checkpoint not found. Training teacher...")
         train_args = args  
