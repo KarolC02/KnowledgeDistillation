@@ -54,7 +54,8 @@ def main():
     if not os.path.isfile(logits_path):
         print("[INFO] Logits not found. Generating with teacher model...")
         model = model_dict[args.teacher_model]()
-        state_dict = torch.load(teacher_ckpt)
+        checkpoint = torch.load(teacher_ckpt)
+        state_dict = checkpoint["model_state_dict"]
         state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
         model.load_state_dict(state_dict)
         model.eval()
