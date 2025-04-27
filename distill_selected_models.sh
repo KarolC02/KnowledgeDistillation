@@ -24,7 +24,7 @@ do
             checkpoint=$teacher_checkpoint_convnext
         fi
 
-        python distill.py \
+        python DK.py \
             --teacher_model $teacher \
             --student_model $student \
             --dataset $dataset \
