@@ -30,7 +30,7 @@ def main():
         f"lr={args.teacher_lr:.0e}_bs={args.teacher_batch_size}_epochs={args.teacher_num_epochs}_parallel={args.parallel}"
     )
     teacher_ckpt = os.path.join(teacher_ckpt_dir, args.teacher_checkpoint_name)
-
+    print(teacher_ckpt)
     # Clean up any accidental bash escape issues    
     teacher_ckpt = teacher_ckpt.replace('\\=', '=')
 
