@@ -13,7 +13,7 @@ from utils.transforms import get_standard_imagenet_transform
 from models.models import model_dict
 from train import train, validate_model
 from datasets import get_dataloaders
-
+from utils.adapt_model import adapt_model_to_classes
 
 def main():
     args = get_args()
@@ -54,6 +54,8 @@ def main():
     if not os.path.isfile(logits_path):
         print("[INFO] Logits not found. Generating with teacher model...")
         model = model_dict[args.teacher_model]()
+        if args.adapt_model:
+            model = adapt_model_to_classes(model, num_classes=200)
         checkpoint = torch.load(teacher_ckpt)
         state_dict = checkpoint["model_state_dict"]
         state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
