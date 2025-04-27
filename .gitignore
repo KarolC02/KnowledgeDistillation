@@ -1,8 +1,8 @@
-        .DS_Store
-        SECRET.txt
-        archive/
-        cifar-10-python.tar.gz
-        datasets/
-        models/.DS_Store
-        models/my_models.py
-        venv/
+.DS_Store
+SECRET.txt
+archive/
+cifar-10-python.tar.gz
+datasets/
+models/.DS_Store
+models/my_models.py
+venv/
