@@ -6,7 +6,7 @@
 teachers=("ConvNeXt_pretrained")
 students=("shufflenet_v2_x1_0_pretrained")
 
-dataset="tiny-imagenet"
+dataset="tiny-imagenet-200"
 logdir="results"
 logits_dir="saved_logits"
 modeldir="saved_models"
