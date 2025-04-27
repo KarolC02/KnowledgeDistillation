@@ -24,7 +24,12 @@ def train(args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     model = model_dict[args.model]()
-    model = adapt_model_to_classes(model, num_classes=200)
+
+    if args.adapt_model:
+        model = adapt_model_to_classes(model, num_classes=200)
+    else:
+        adapted = "_not_addapted"
+        print("Not adapting the model to 200 classes")
     if args.parallel:
         model = nn.DataParallel(model)
     model.to(device)
@@ -38,7 +43,7 @@ def train(args):
         args.logdir,
         args.dataset,
         args.model,
-        f"lr={args.lr:.0e}_bs={args.batch_size}_epochs={args.num_epochs}_parallel={args.parallel}"
+        f"lr={args.lr:.0e}_bs={args.batch_size}_epochs={args.num_epochs}_parallel={args.parallel}{adapted}"
     )
     os.makedirs(save_dir, exist_ok=True)
 

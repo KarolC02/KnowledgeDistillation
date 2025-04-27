@@ -17,15 +17,19 @@
 # "vgg19_pretrained" "vgg19"
 # )
 
-models=(
-"densenet121_pretrained" "densenet121"
-"resnext50_32x4d_pretrained" "resnext50_32x4d"
-"mnasnet1_0_pretrained" "mnasnet1_0"
-"shufflenet_v2_x1_0_pretrained" "shufflenet_v2_x1_0"
-"vgg16_pretrained" "vgg16"
-"vgg19_pretrained" "vgg19"
-)
+# models=(
+# "densenet121_pretrained" "densenet121"
+# "resnext50_32x4d_pretrained" "resnext50_32x4d"
+# "mnasnet1_0_pretrained" "mnasnet1_0"
+# "shufflenet_v2_x1_0_pretrained" "shufflenet_v2_x1_0"
+# "vgg16_pretrained" "vgg16"
+# "vgg19_pretrained" "vgg19"
+# )
 
+models=(
+"vgg19_pretrained" 
+swin_b_pretrained
+)
 
 
 batch_size=128

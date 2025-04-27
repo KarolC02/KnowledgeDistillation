@@ -83,4 +83,11 @@ def get_args():
         help="Path to a checkpoint file to resume training (default: None)"
     )
 
+    parser.add_argument(
+        "--adapt_model",
+        action="store_true",
+        help="Adapt model to num of classses of the dataset (1000 -> 200 in case of tiny image-met)"
+    )
+
+
     return parser.parse_args()
