@@ -27,14 +27,13 @@
 # )
 
 models=(
-"vgg19_pretrained" 
-swin_b_pretrained
+"mnasnet1_0_pretrained" "mnasnet1_0"
 )
 
 
 batch_size=128
 lr=0.001
-num_epochs=20
+num_epochs=50
 dataset="tiny-imagenet"
 logdir="results"
 num_workers=16
