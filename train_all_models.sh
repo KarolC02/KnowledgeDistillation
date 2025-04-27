@@ -55,7 +55,7 @@ do
         --logdir $logdir \
         --num_workers $num_workers \
         --save_checkpoint_every $save_checkpoint_every \
-        --seed $seed
+        --seed $seed \
         --adapt_model
     echo "Finished $model."
 done
