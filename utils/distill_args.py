@@ -56,5 +56,9 @@ def get_args():
 
     parser.add_argument("--teacher_checkpoint_name", type=str, default="final_checkpoint.pth",
         help="Filename of the teacher checkpoint to use (default: final_checkpoint.pth)")
+    
+    parser.add_argument("--num_workers", type=int, default=16, 
+        help="Number of workers for data loading")
+
 
     return parser.parse_args()
