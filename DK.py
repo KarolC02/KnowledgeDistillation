@@ -55,7 +55,8 @@ def main():
         print("[INFO] Logits not found. Generating with teacher model...")
         model = model_dict[args.teacher_model]()
         state_dict = torch.load(teacher_ckpt)
-        model.load_state_dict({k.replace('module.', ''): v for k, v in state_dict.items()})
+        state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+        model.load_state_dict(state_dict)
         model.eval()
 
         train_loader = DataLoader(
