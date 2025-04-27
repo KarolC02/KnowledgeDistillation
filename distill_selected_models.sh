@@ -1,7 +1,7 @@
 #!/bin/bash
 
 teachers=("ConvNeXt_pretrained")
-students=("resnet18_pretrained")
+students=("resnet18_pretrained", "shufflenet_v2_x1_0_pretrained")
 
 dataset="tiny-imagenet"
 logdir="results"
@@ -10,7 +10,7 @@ modeldir="saved_models"
 teacher_checkpoint_convnext="checkpoint_epoch_5.pth"
 teacher_checkpoint_default="final_checkpoint.pth"
 
-temperatures=(1 2 4 10 20 100)
+temperatures=(4 10 20 100)
 alphas=(0 0.1 0.5 0.9 1)
 
 for teacher in "${teachers[@]}"; do

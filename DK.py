@@ -147,14 +147,14 @@ class DistillationDataset(Dataset):
 
 def distillation_loss(student_logits, teacher_logits, labels, T, alpha):
     hard = F.cross_entropy(student_logits, labels)
-    if alpha != 1:
-        soft = F.kl_div(
-            F.log_softmax(student_logits / T, dim=1),
-            F.softmax(teacher_logits / T, dim=1),
-            reduction='batchmean'
-        ) * (T * T)
-    else:
-        soft = 0
+    if alpha == 1:
+        return hard
+    
+    soft = F.kl_div(
+        F.log_softmax(student_logits / T, dim=1),
+        F.softmax(teacher_logits / T, dim=1),
+        reduction='batchmean'
+    ) * (T * T)
     return alpha * hard + (1 - alpha) * soft
 
 
