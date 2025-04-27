@@ -51,4 +51,10 @@ def get_args():
     parser.add_argument("--parallel", action="store_true",
         help="Use DataParallel for teacher and student")
 
+    parser.add_argument("--adapt_model", action="store_true",
+        help="Adapt model output layer to match number of classes (e.g., 1000 -> 200)")
+
+    parser.add_argument("--teacher_checkpoint_name", type=str, default="final_checkpoint.pth",
+        help="Filename of the teacher checkpoint to use (default: final_checkpoint.pth)")
+
     return parser.parse_args()

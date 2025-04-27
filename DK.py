@@ -23,14 +23,13 @@ def main():
     transform = get_standard_imagenet_transform()
 
     # Train teacher if not found
-    teacher_dir = os.path.join(
+    teacher_ckpt = os.path.join(
         args.logdir,
         args.dataset,
         args.teacher_model,
-        f"lr={args.teacher_lr:.0e}_bs={args.teacher_batch_size}_epochs={args.teacher_num_epochs}_parallel={args.parallel}"
+        f"lr={args.teacher_lr:.0e}_bs={args.teacher_batch_size}_epochs={args.teacher_num_epochs}_parallel={args.parallel}",
+        args.teacher_checkpoint_name
     )
-    teacher_ckpt = os.path.join(teacher_dir, "final_checkpoint.pth")
-
     if not os.path.isfile(teacher_ckpt):
         print("[INFO] Teacher checkpoint not found. Training teacher...")
         train_args = args  
@@ -45,7 +44,9 @@ def main():
         print("[INFO] Found teacher checkpoint. Skipping training.")
 
     # Generate logits if needed
-    logits_path = os.path.join(args.logits_dir, args.dataset, args.teacher_model, "logits.pth")
+    logits_filename = f"logits_bs={args.teacher_batch_size}_lr={args.teacher_lr:.0e}_epochs={args.teacher_num_epochs}_adapted={args.adapt_model}_ckpt={args.teacher_checkpoint_name.replace('.pth', '')}.pth"
+    logits_path = os.path.join(args.logits_dir, args.dataset, args.teacher_model, logits_filename)
+
     if not os.path.isfile(logits_path):
         print("[INFO] Logits not found. Generating with teacher model...")
         model = model_dict[args.teacher_model]()
@@ -58,7 +59,7 @@ def main():
             batch_size=args.teacher_batch_size,
             shuffle=False, num_workers=16, pin_memory=True
         )
-        save_logits(model, train_loader, args.parallel, logits_path)
+        save_logits(model, train_loader, args.parallel, logits_path, args)
         print("[INFO] Logits saved.")
 
     # Load distillation dataset
@@ -82,6 +83,7 @@ def main():
     log_path = os.path.join(
         args.logdir,
         "distill",
+        args.dataset,
         f"{args.teacher_model}_to_{args.student_model}_T={args.temperature}_alpha={args.alpha}"
     )
     writer = SummaryWriter(log_dir=log_path)
@@ -97,7 +99,7 @@ def main():
     print(f"[INFO] Saved distilled model to {out_path}")
 
 
-def save_logits(model, loader, parallel, path):
+def save_logits(model, loader, parallel, path, args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if parallel:
         model = nn.DataParallel(model)
@@ -109,8 +111,19 @@ def save_logits(model, loader, parallel, path):
             inputs = inputs.to(device)
             logits = model(inputs)
             all_logits.append(logits.cpu())
+    
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    torch.save({"logits": torch.cat(all_logits)}, path)
+    torch.save({
+        "logits": torch.cat(all_logits),
+        "batch_size": args.teacher_batch_size,
+        "lr": args.teacher_lr,
+        "num_epochs": args.teacher_num_epochs,
+        "adapted": args.adapt_model,
+        "teacher_checkpoint_used": args.teacher_checkpoint_name,
+        "teacher_model": args.teacher_model,
+        "dataset": args.dataset,
+    }, path)
+
 
 
 class DistillationDataset(Dataset):

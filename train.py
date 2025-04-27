@@ -58,7 +58,7 @@ def train(args):
         start_epoch = checkpoint["epoch"] + 1
         print(f"Resumed training from checkpoint at epoch {start_epoch}")
 
-    validate_model(model, val_loader, device, curr_epoch=0, writer=writer)
+    validate_model(model, val_loader, device, curr_epoch=-1, writer=writer)
     for epoch in range(start_epoch, args.num_epochs):
         train_one_epoch(train_loader, optimizer, device, epoch, args.num_epochs, model, criterion, writer, val_loader)
 
