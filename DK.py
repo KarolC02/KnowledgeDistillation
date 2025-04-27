@@ -68,6 +68,7 @@ def main():
         print("[INFO] Logits saved.")
     else:
         print("Found logits")
+        
     train_dataset = DistillationDataset(
         root="datasets/tiny-imagenet-200/train", logits_path=logits_path, transform=transform
     )
@@ -76,6 +77,10 @@ def main():
     _, val_loader = get_dataloaders(args.dataset, args.batch_size, shuffle_train=False)
 
     student = model_dict[args.student_model]()
+
+    if args.adapt_model:
+        student = adapt_model_to_classes(student, num_classes=200)
+
     if args.parallel:
         student = nn.DataParallel(student)
     student.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
