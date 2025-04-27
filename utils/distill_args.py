@@ -33,8 +33,8 @@ def get_args():
     parser.add_argument("--teacher_lr", type=float, default=0.001,
         help="Teacher learning rate (default: 0.001)")
 
-    parser.add_argument("--teacher_num_epochs", type=int, default=10,
-        help="Number of epochs to train the teacher (default: 10)")
+    parser.add_argument("--teacher_num_epochs", type=int, default=20,
+        help="Number of epochs to train the teacher (default: 20)")
 
     parser.add_argument("--dataset", type=str, default="tiny-imagenet",
         help="Dataset name (default: tiny-imagenet)")
