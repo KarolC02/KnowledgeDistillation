@@ -6,3 +6,7 @@ datasets/
 models/.DS_Store
 models/my_models.py
 venv/
+results/
+rp2k/
+rp2k_dataset.zip
+test.ipynb
