@@ -3,9 +3,15 @@
 import os
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
+from PIL import Image
 
+class ConvertToRGB:
+    def __call__(self, img):
+        return img.convert("RGB")
+    
 def get_dataloaders(dataset_name, batch_size, num_workers=16, shuffle_train=True):
     transform = transforms.Compose([
+        ConvertToRGB(),
         transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
