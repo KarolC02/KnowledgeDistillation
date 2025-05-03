@@ -63,8 +63,6 @@ def train(args):
     train_loader, val_loader = get_dataloaders(args.dataset, args.batch_size, args.num_workers)
 
     exp_name = (
-        f"{args.dataset}_"
-        f"{args.model}_"
         f"lr={args.lr:.0e}_"
         f"bs={args.batch_size}_"
         f"epochs={args.num_epochs}_"
@@ -75,7 +73,7 @@ def train(args):
     if args.lr_decay_every > 0:
         exp_name += f"_decayEvery={args.lr_decay_every}_gamma={args.lr_decay_factor}"
 
-    save_dir = os.path.join(args.logdir, exp_name)
+    save_dir = os.path.join(args.logdir, args.dataset, args.model, exp_name)
     os.makedirs(save_dir, exist_ok=True)
 
     writer = SummaryWriter(log_dir=os.path.join(save_dir, "tensorboard"))
