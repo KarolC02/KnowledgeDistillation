@@ -11,6 +11,7 @@ from datasets import get_dataloaders
 from utils.seed_utils import set_seed
 from trainer.train_loop import train_one_epoch
 from trainer.val_loop import validate_model
+from trainer.val_loop import validate_single_batch
 from utils.adapt_model import adapt_model_to_classes
 
 def main():
@@ -68,7 +69,7 @@ def train(args):
 
     print("Quick sanity check on validation set...")
     validate_single_batch(model, val_loader, device)
-    
+
     for epoch in range(start_epoch, args.num_epochs):
         train_one_epoch(train_loader, optimizer, device, epoch, args.num_epochs, model, criterion, writer, val_loader)
 
