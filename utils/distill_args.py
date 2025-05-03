@@ -59,6 +59,12 @@ def get_args():
     
     parser.add_argument("--num_workers", type=int, default=16, 
         help="Number of workers for data loading")
+    
+    parser.add_argument("--num_classes", type=int, default=200,
+        help="How many classification classes in the dataset (default : 200, for tiny-image-net)" )
+
+    parser.add_argument("--optimizer", type=str, default="Adam",
+        help="Model optimiizer (default: adam)" )
 
 
     return parser.parse_args()

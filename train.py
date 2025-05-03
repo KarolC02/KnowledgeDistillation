@@ -26,7 +26,7 @@ def train(args):
     model = model_dict[args.model]()
 
     if args.adapt_model:
-        model = adapt_model_to_classes(model, num_classes=200)
+        model = adapt_model_to_classes(model, args.num_classes)
     else:
         print("Not adapting the model to 200 classes")
 
@@ -34,7 +34,10 @@ def train(args):
         model = nn.DataParallel(model)
     model.to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    if args.optimizer == "Adam":
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    else:
+        print("Optimizer not found")
     criterion = nn.CrossEntropyLoss()
 
     train_loader, val_loader = get_dataloaders(args.dataset, args.batch_size, args.num_workers)

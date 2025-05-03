@@ -70,6 +70,19 @@ def get_args():
     )
 
     parser.add_argument(
+        "--num_classes",
+        type=int,
+        default=200,
+        help="How many classification classes in the dataset (default : 200, for tiny-image-net)"
+    )
+
+    parser.add_argument(
+        "--optimizer",
+        type=str,
+        default="Adam",
+        help="Model optimiizer (default: adam)"
+    )
+    parser.add_argument(
         "--save_checkpoint_every",
         type=int,
         default=5,
@@ -88,6 +101,8 @@ def get_args():
         action="store_true",
         help="Adapt model to num of classses of the dataset (1000 -> 200 in case of tiny image-met)"
     )
+
+
 
 
     return parser.parse_args()
