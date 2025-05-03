@@ -35,6 +35,9 @@ def train(args):
 
     if args.parallel:
         model = nn.DataParallel(model)
+        print("Parallelizing model")
+    else:
+        print("Not parallelizing model")
     model.to(device)
 
     if args.optimizer.lower() == "adam":

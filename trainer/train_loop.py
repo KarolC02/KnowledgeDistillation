@@ -1,5 +1,7 @@
 import torch
 from tqdm import tqdm
+from trainer.val_loop import validate_single_batch
+from trainer.val_loop import validate_model
 
 def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, criterion, writer=None, val_loader=None, log_interval=50):
     model.train()
@@ -31,6 +33,8 @@ def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, c
                 global_step = epoch * len(train_loader) + batch_idx
                 writer.add_scalar("Train/Loss", loss.item(), global_step)
                 writer.add_scalar("Train/Accuracy", acc, global_step)
+            
+            validate_single_batch(model, val_loader, device)
 
     avg_loss = running_loss / len(train_loader)
     acc = correct / total
@@ -40,5 +44,4 @@ def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, c
         writer.add_scalar("Train/EpochAccuracy", acc, epoch)
 
     if val_loader:
-        from trainer.val_loop import validate_model
         validate_model(model, val_loader, device, curr_epoch=epoch, writer=writer)
