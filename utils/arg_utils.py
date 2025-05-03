@@ -102,7 +102,31 @@ def get_args():
         help="Adapt model to num of classses of the dataset (1000 -> 200 in case of tiny image-met)"
     )
 
+    parser.add_argument(
+        "--lr_decay_every",
+        type=int,
+        default=0,
+        help="Decay learning rate every N epochs (0 means no decay)"
+    )
 
+    parser.add_argument(
+        "--lr_decay_factor",
+        type=float,
+        default=0.1,
+        help="Factor to decay learning rate by (e.g., 0.1 means divide by 10)"
+    )
 
+    parser.add_argument(
+        "--weight_decay",
+        type=float,
+        default=0.0,
+        help="Weight decay (L2 regularization), default is 0.0"
+    )
 
+    parser.add_argument(
+        "--dropout",
+        type=float,
+        default=0.0,
+        help="Dropout probability to apply in classifier head (default: 0.0)"
+    )
     return parser.parse_args()

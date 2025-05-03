@@ -41,25 +41,46 @@ def train(args):
     model.to(device)
 
     if args.optimizer.lower() == "adam":
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+        optimizer = torch.optim.Adam(
+        model.parameters(), lr=args.lr, weight_decay=args.weight_decay
+    )
     elif args.optimizer.lower() == "sgd":
-        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+        optimizer = torch.optim.SGD(
+            model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay
+        )
     else:
         raise ValueError(f"Unsupported optimizer: {args.optimizer}")
+    
 
+    scheduler = None
+    if args.lr_decay_every > 0:
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=args.lr_decay_every, gamma=args.lr_decay_factor
+        )
+        
     criterion = nn.CrossEntropyLoss()
 
     train_loader, val_loader = get_dataloaders(args.dataset, args.batch_size, args.num_workers)
 
-    save_dir = os.path.join(
-        args.logdir,
-        args.dataset,
-        args.model,
-        f"lr={args.lr:.0e}_bs={args.batch_size}_epochs={args.num_epochs}"
+    exp_name = (
+        f"{args.dataset}_"
+        f"{args.model}_"
+        f"lr={args.lr:.0e}_"
+        f"bs={args.batch_size}_"
+        f"epochs={args.num_epochs}_"
+        f"wd={args.weight_decay}_"
+        f"do={args.dropout}"
     )
+
+    if args.lr_decay_every > 0:
+        exp_name += f"_decayEvery={args.lr_decay_every}_gamma={args.lr_decay_factor}"
+
+    save_dir = os.path.join(args.logdir, exp_name)
     os.makedirs(save_dir, exist_ok=True)
 
     writer = SummaryWriter(log_dir=os.path.join(save_dir, "tensorboard"))
+
+
 
     start_epoch = 0
 
@@ -75,6 +96,12 @@ def train(args):
 
     for epoch in range(start_epoch, args.num_epochs):
         train_one_epoch(train_loader, optimizer, device, epoch, args.num_epochs, model, criterion, writer, val_loader)
+        if scheduler:
+            scheduler.step()
+            current_lr = optimizer.param_groups[0]['lr']
+            writer.add_scalar("lr", current_lr, epoch)
+            print(f"[Epoch {epoch+1}] Learning rate adjusted to: {current_lr:.2e}")
+
 
         if (epoch + 1) % args.save_checkpoint_every == 0:
             checkpoint_path = os.path.join(save_dir, f"checkpoint_epoch_{epoch+1}.pth")
