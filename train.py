@@ -26,7 +26,9 @@ def train(args):
     model = model_dict[args.model]()
 
     if args.adapt_model:
+        print("Before adaptation:", model.classifier)
         model = adapt_model_to_classes(model, args.num_classes)
+        print("After adaptation:", model.classifier)
     else:
         print("Not adapting the model to 200 classes")
 
@@ -34,10 +36,13 @@ def train(args):
         model = nn.DataParallel(model)
     model.to(device)
 
-    if args.optimizer == "Adam":
+    if args.optimizer.lower() == "adam":
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    elif args.optimizer.lower() == "sgd":
+        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
     else:
-        print("Optimizer not found")
+        raise ValueError(f"Unsupported optimizer: {args.optimizer}")
+
     criterion = nn.CrossEntropyLoss()
 
     train_loader, val_loader = get_dataloaders(args.dataset, args.batch_size, args.num_workers)
@@ -46,7 +51,7 @@ def train(args):
         args.logdir,
         args.dataset,
         args.model,
-        f"lr={args.lr:.0e}_bs={args.batch_size}_epochs={args.num_epochs}_parallel={args.parallel}"
+        f"lr={args.lr:.0e}_bs={args.batch_size}_epochs={args.num_epochs}"
     )
     os.makedirs(save_dir, exist_ok=True)
 
@@ -61,7 +66,9 @@ def train(args):
         start_epoch = checkpoint["epoch"] + 1
         print(f"Resumed training from checkpoint at epoch {start_epoch}")
 
-    validate_model(model, val_loader, device, curr_epoch=-1, writer=writer)
+    print("Quick sanity check on validation set...")
+    validate_single_batch(model, val_loader, device)
+    
     for epoch in range(start_epoch, args.num_epochs):
         train_one_epoch(train_loader, optimizer, device, epoch, args.num_epochs, model, criterion, writer, val_loader)
 
@@ -73,7 +80,6 @@ def train(args):
                 "optimizer_state_dict": optimizer.state_dict()
             }, checkpoint_path)
 
-    validate_model(model, val_loader, device, curr_epoch=args.num_epochs-1, writer=writer)
     final_checkpoint_path = os.path.join(save_dir, "final_checkpoint.pth")
     torch.save({
         "epoch": args.num_epochs,
