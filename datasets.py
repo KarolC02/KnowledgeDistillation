@@ -31,7 +31,7 @@ def get_dataloaders(dataset_name, batch_size, num_workers=16, shuffle_train=True
     elif dataset_name.lower() == 'rp2k':
 
         train_dir = "datasets/rp2k/train"
-        val_dir = "datasets/rp2k/val/images"
+        val_dir = "datasets/rp2k/test/images"
 
         assert os.path.isdir(train_dir), f"Training directory not found: {train_dir}"
         assert os.path.isdir(val_dir), f"Validation directory not found: {val_dir}"
