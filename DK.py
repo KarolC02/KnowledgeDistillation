@@ -21,43 +21,32 @@ def main():
 
     transform = get_standard_imagenet_transform()
 
-    teacher_ckpt_dir = os.path.join(
-        args.logdir,
-        args.dataset,
-        args.teacher_model,
-        f"lr={args.teacher_lr:.0e}_bs={args.teacher_batch_size}_epochs={args.teacher_num_epochs}_parallel={args.parallel}"
-    )
-    teacher_ckpt = os.path.join(teacher_ckpt_dir, args.teacher_checkpoint_name)
-    teacher_ckpt = teacher_ckpt.replace('\\=', '=')
+    if args.teacher_checkpoint_path:
+        teacher_ckpt = args.teacher_checkpoint_path
+    else:
+        raise Exception("Please provide a valid path to a teacher model via --teacher_checkpoint_path")
+
 
     if not os.path.isfile(teacher_ckpt):
-        print("[INFO] Teacher checkpoint not found. Training teacher...")
-        train_args = args
-        train_args.model = args.teacher_model
-        train_args.batch_size = args.teacher_batch_size
-        train_args.lr = args.teacher_lr
-        train_args.num_epochs = args.teacher_num_epochs
-        train_args.parallel = args.parallel
-        train_args.dataset = args.dataset
-        train(train_args)
-    else:
-        print("[INFO] Found teacher checkpoint. Skipping training.")
+        raise FileNotFoundError(f"Teacher checkpoint not found at: {teacher_ckpt}")
+    print(f"[INFO] Using teacher checkpoint: {teacher_ckpt}")
 
-    logits_filename = f"logits_bs={args.teacher_batch_size}_lr={args.teacher_lr:.0e}_epochs={args.teacher_num_epochs}_adapted={args.adapt_model}_ckpt={args.teacher_checkpoint_name.replace('.pth', '')}.pth"
-    logits_path = os.path.join(args.logits_dir, args.dataset, args.teacher_model, logits_filename)
+    logits_path  = infer_logits_path(args)
+
 
     if not os.path.isfile(logits_path):
         print("[INFO] Logits not found. Generating with teacher model...")
+
         model = model_dict[args.teacher_model]()
         if args.adapt_model:
-            model = adapt_model_to_classes(model, num_classes=200)
+            model = adapt_model_to_classes(model, num_classes=args.num_classes)
         checkpoint = torch.load(teacher_ckpt)
         state_dict = checkpoint["model_state_dict"]
         state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
 
         dummy_input = torch.randn(1, 3, 224, 224).to(next(model.parameters()).device)
         output = model(dummy_input)
-        assert output.shape[1] == 200, f"Teacher model output size {output.shape[1]} does not match 200 classes. Check model adaptation."
+        assert output.shape[1] == args.num_classes, f"Teacher model output size {output.shape[1]} does not match {args.num_classes} classes. Check model adaptation."
 
 
         model.load_state_dict(state_dict)
@@ -69,17 +58,22 @@ def main():
     else:
         print("Found logits")
         
-    train_dataset = DistillationDataset(
-        root="datasets/tiny-imagenet-200/train", logits_path=logits_path, transform=transform
-    )
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=16, pin_memory=True)
+    if args.dataset == 'tiny-imagenet':
+        train_dataset = DistillationDataset(
+            root="datasets/tiny-imagenet-200/train", logits_path=logits_path, transform=transform
+        )
+    else:
+        train_dataset = DistillationDataset(
+            root=f"datasets/{args.dataset}/train", logits_path=logits_path, transform=transform
+        )
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers = args.num_workers, pin_memory=True)
 
     _, val_loader = get_dataloaders(args.dataset, args.batch_size, shuffle_train=False)
 
     student = model_dict[args.student_model]()
 
     if args.adapt_model:
-        student = adapt_model_to_classes(student, num_classes=200)
+        student = adapt_model_to_classes(student, num_classes=args.num_classes)
 
     if args.parallel:
         student = nn.DataParallel(student)
@@ -87,11 +81,29 @@ def main():
 
     optimizer = torch.optim.Adam(student.parameters(), lr=args.lr)
 
+
+    if args.optimizer.lower() == "adam":
+        optimizer = torch.optim.Adam(
+        student.parameters(), lr=args.lr, weight_decay=args.weight_decay
+    )
+    elif args.optimizer.lower() == "sgd":
+        optimizer = torch.optim.SGD(
+            student.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay
+        )
+    else:
+        raise ValueError(f"Unsupported optimizer: {args.optimizer}")
+
+    scheduler = None
+    if args.lr_decay_every > 0:
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=args.lr_decay_every, gamma=args.lr_decay_factor
+        )
+
     log_path = os.path.join(
         args.logdir,
         args.dataset,
         "distill",
-        f"{args.teacher_model}_to_{args.student_model}_T={args.temperature}_alpha={args.alpha}"
+        f"{args.teacher_checkpoint_path}_to_{args.student_model}_T={args.temperature}_alpha={args.alpha}"
     )
     writer = SummaryWriter(log_dir=log_path)
 
@@ -100,10 +112,11 @@ def main():
 
     validate_model(student, val_loader, torch.device("cuda" if torch.cuda.is_available() else "cpu"), args.num_epochs - 1, writer)
 
-    out_path = os.path.join(args.modeldir, f"distilled_{args.teacher_model}_to_{args.student_model}.pth")
+    out_path = build_distilled_model_path(args)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     torch.save(student.state_dict(), out_path)
     print(f"[INFO] Saved distilled model to {out_path}")
+
 
 
 def save_logits(model, loader, parallel, path, args):
@@ -113,6 +126,7 @@ def save_logits(model, loader, parallel, path, args):
     model.to(device)
 
     all_logits = []
+    model.eval()
     with torch.no_grad():
         for inputs, _ in tqdm(loader, desc="Forward pass for logits"):
             inputs = inputs.to(device)
@@ -120,16 +134,14 @@ def save_logits(model, loader, parallel, path, args):
             all_logits.append(logits.cpu())
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
+
     torch.save({
         "logits": torch.cat(all_logits),
-        "batch_size": args.teacher_batch_size,
-        "lr": args.teacher_lr,
-        "num_epochs": args.teacher_num_epochs,
         "adapted": args.adapt_model,
-        "teacher_checkpoint_used": args.teacher_checkpoint_name,
-        "teacher_model": args.teacher_model,
+        "teacher_checkpoint_used": args.teacher_checkpoint_path,
         "dataset": args.dataset,
     }, path)
+
 
 
 class DistillationDataset(Dataset):
@@ -182,6 +194,37 @@ def train_one_epoch_distillation(loader, optimizer, model, epoch, total_epochs, 
 
     if epoch in {0, 1, 2} or (epoch + 1) % 5 == 0:
         validate_model(model, val_loader, device, epoch, writer)
+
+
+def infer_logits_path(args):
+    if args.logits_path != "-":
+        return args.logits_path
+
+    checkpoint_dir = os.path.dirname(args.teacher_checkpoint_path)
+
+    relative_ckpt_path = os.path.relpath(checkpoint_dir, start=os.path.commonpath([checkpoint_dir, args.logdir]))
+    logits_folder = os.path.join(args.logits_dir, relative_ckpt_path)
+
+    return os.path.join(logits_folder, "logits.pth")
+
+import os
+
+def build_distilled_model_path(args):
+    teacher_exp_folder = os.path.basename(os.path.dirname(args.teacher_checkpoint_path))
+    student_exp = (
+        f"TO_{args.student_model}_"
+        f"lr={args.lr:.0e}_"
+        f"bs={args.batch_size}_"
+        f"epochs={args.num_epochs}_"
+        f"wd={args.weight_decay}_"
+        f"do={args.dropout}"
+    )
+
+    if args.lr_decay_every > 0:
+        student_exp += f"_decayEvery={args.lr_decay_every}_gamma={args.lr_decay_factor}"
+
+    filename = f"{student_exp}_FROM_{teacher_exp_folder}.pth"
+    return os.path.join(args.modeldir, args.dataset, "distill", filename)
 
 
 if __name__ == "__main__":
