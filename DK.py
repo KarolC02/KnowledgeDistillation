@@ -13,6 +13,7 @@ from utils.transforms import get_standard_imagenet_transform
 from models.models import model_dict
 from train import train, validate_model
 from datasets import get_dataloaders
+from trainer.val_loop import validate_single_batch
 from utils.adapt_model import adapt_model_to_classes
 
 def main():
@@ -171,13 +172,16 @@ def distillation_loss(student_logits, teacher_logits, labels, T, alpha):
     return alpha * hard + (1 - alpha) * soft
 
 
-def train_one_epoch_distillation(loader, optimizer, model, epoch, total_epochs, writer, T, alpha, val_loader):
+def train_one_epoch_distillation(loader, optimizer, model, epoch, total_epochs, writer, T, alpha, val_loader, log_interval=50):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.train()
-    total_loss, correct, total = 0, 0, 0
 
-    for inputs, labels, teacher_logits in tqdm(loader, desc=f"Epoch {epoch+1}/{total_epochs}"):
+    total_loss, correct, total = 0.0, 0, 0
+
+    pbar = tqdm(enumerate(loader), total=len(loader), desc=f"Epoch {epoch+1}/{total_epochs}")
+    for batch_idx, (inputs, labels, teacher_logits) in pbar:
         inputs, labels, teacher_logits = inputs.to(device), labels.to(device), teacher_logits.to(device)
+
         student_logits = model(inputs)
         loss = distillation_loss(student_logits, teacher_logits, labels, T, alpha)
 
@@ -189,12 +193,24 @@ def train_one_epoch_distillation(loader, optimizer, model, epoch, total_epochs, 
         correct += (student_logits.argmax(dim=1) == labels).sum().item()
         total += labels.size(0)
 
-    acc = 100.0 * correct / total
-    writer.add_scalar("Training Loss", total_loss / total, epoch+1)
-    writer.add_scalar("Training Accuracy", acc, epoch+1)
+        avg_loss = total_loss / total
+        acc = 100.0 * correct / total
+        pbar.set_postfix({
+            "Loss": f"{avg_loss:.4f}",
+            "Acc": f"{acc:.2f}%"
+        })
 
-    if epoch in {0, 1, 2} or (epoch + 1) % 5 == 0:
-        validate_model(model, val_loader, device, epoch, writer)
+        if (batch_idx + 1) % log_interval == 0:
+            writer.add_scalar("Batch Loss", loss.item(), epoch * len(loader) + batch_idx)
+            writer.add_scalar("Batch Accuracy", acc, epoch * len(loader) + batch_idx)
+            validate_single_batch(model, val_loader, device)
+
+    writer.add_scalar("Training Loss", total_loss / total, epoch + 1)
+    writer.add_scalar("Training Accuracy", acc, epoch + 1)
+
+    validate_model(model, val_loader, device, epoch, writer)
+
+
 
 
 def infer_logits_path(args):
