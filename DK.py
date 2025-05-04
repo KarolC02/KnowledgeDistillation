@@ -68,7 +68,7 @@ def main():
         train_dataset = DistillationDataset(
             root=f"datasets/{args.dataset}/train", logits_path=logits_path, transform=transform
         )
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers = args.num_workers, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, num_workers = args.num_workers, pin_memory=True)
 
     _, val_loader = get_dataloaders(args.dataset, args.batch_size, shuffle_train=False)
 
