@@ -53,7 +53,7 @@ def main():
         model.load_state_dict(state_dict)
         model.eval()
 
-        train_loader, _ = get_dataloaders(args.dataset, args.teacher_batch_size, shuffle_train=False)
+        train_loader, _ = get_dataloaders(args.dataset, args.batch_size, shuffle_train=False)
         save_logits(model, train_loader, args.parallel, logits_path, args)
         print("[INFO] Logits saved.")
     else:
