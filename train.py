@@ -27,11 +27,18 @@ def train(args):
     model = model_dict[args.model]()
 
     if args.adapt_model:
-        print("Before adaptation:", model.classifier)
+        print("Before adaptation:")
+        for name, module in model.named_modules():
+            if isinstance(module, nn.Linear):
+                print(f"  {name}: {module}")
         model = adapt_model_to_classes(model, args.num_classes)
-        print("After adaptation:", model.classifier)
+        print("After adaptation:")
+        for name, module in model.named_modules():
+            if isinstance(module, nn.Linear):
+                print(f"  {name}: {module}")
     else:
-        print("Not adapting the model to 200 classes")
+        print("Not adapting the model to", args.num_classes, "classes")
+
 
     if args.parallel:
         model = nn.DataParallel(model)
