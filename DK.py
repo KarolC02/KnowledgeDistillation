@@ -50,7 +50,7 @@ def main():
         print("[INFO] Logits saved.")
     else:
         print("Found logits")
-
+ 
     train_dataset = DistillationDataset(
         root=f"datasets/{args.dataset}/train" if args.dataset != 'tiny-imagenet' else "datasets/tiny-imagenet-200/train",
         logits_path=logits_path,
@@ -115,6 +115,7 @@ def save_logits(model, loader, parallel, path, args):
     all_paths = [os.path.abspath(path) for (path, _) in loader.dataset.samples]
     assert len(all_paths) == sum([b.shape[0] for b in all_logits]), "Mismatch between number of logits and image paths"
 
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     torch.save({
         "logits": torch.cat(all_logits),
         "paths": all_paths,
