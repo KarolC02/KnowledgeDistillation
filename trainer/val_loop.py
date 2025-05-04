@@ -37,13 +37,12 @@ def validate_single_batch(model, val_loader, device):
     total = 0
 
     with torch.no_grad():
-        for inputs, labels in val_loader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-            break  # Only use the first batch
-
+        inputs, labels = next(iter(val_loader))
+        inputs, labels = inputs.to(device), labels.to(device)
+        outputs = model(inputs)
+        _, predicted = torch.max(outputs, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+        
     val_accuracy = 100 * correct / total
     print(f"Sanity check: Validation Accuracy on 1 batch: {val_accuracy:.2f}%")
