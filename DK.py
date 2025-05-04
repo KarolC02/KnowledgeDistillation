@@ -204,6 +204,8 @@ def train_one_epoch_distillation(loader, optimizer, model, epoch, total_epochs, 
             writer.add_scalar("Train/Loss", loss.item(), epoch * len(loader) + batch_idx)
             writer.add_scalar("Train/Accuracy", acc, epoch * len(loader) + batch_idx)
             validate_single_batch(model, val_loader, device)
+            model.train()
+
 
     writer.add_scalar("Train/EpochLoss", total_loss / total, epoch + 1)
     writer.add_scalar("Train/EpochAccuracy", acc, epoch + 1)
