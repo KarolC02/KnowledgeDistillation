@@ -37,7 +37,8 @@ def main():
     if not os.path.isfile(logits_path):
         print("[INFO] Logits not found. Generating with teacher model...")
 
-        model = model_dict[args.teacher_model]()
+        teacher_model_name = extract_teacher_model_name(args.teacher_checkpoint_path, args.dataset)
+        model = model_dict[teacher_model_name]()
         if args.adapt_model:
             model = adapt_model_to_classes(model, num_classes=args.num_classes)
         checkpoint = torch.load(teacher_ckpt)
@@ -226,6 +227,13 @@ def build_distilled_model_path(args):
     filename = f"{student_exp}_FROM_{teacher_exp_folder}.pth"
     return os.path.join(args.modeldir, args.dataset, "distill", filename)
 
+def extract_teacher_model_name(checkpoint_path, dataset_name):
+    parts = os.path.normpath(checkpoint_path).split(os.sep)
+    try:
+        dataset_index = parts.index(dataset_name)
+        return parts[dataset_index + 1]
+    except (ValueError, IndexError):
+        raise ValueError(f"Could not extract teacher model name from path: {checkpoint_path}")
 
 if __name__ == "__main__":
     main()
