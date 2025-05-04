@@ -201,12 +201,12 @@ def train_one_epoch_distillation(loader, optimizer, model, epoch, total_epochs, 
         })
 
         if (batch_idx + 1) % log_interval == 0:
-            writer.add_scalar("Batch Loss", loss.item(), epoch * len(loader) + batch_idx)
-            writer.add_scalar("Batch Accuracy", acc, epoch * len(loader) + batch_idx)
+            writer.add_scalar("Train/Loss", loss.item(), epoch * len(loader) + batch_idx)
+            writer.add_scalar("Train/Accuracy", acc, epoch * len(loader) + batch_idx)
             validate_single_batch(model, val_loader, device)
 
-    writer.add_scalar("Training Loss", total_loss / total, epoch + 1)
-    writer.add_scalar("Training Accuracy", acc, epoch + 1)
+    writer.add_scalar("Train/EpochLoss", total_loss / total, epoch + 1)
+    writer.add_scalar("Train/EpochAccuracy", acc, epoch + 1)
 
     validate_model(model, val_loader, device, epoch, writer)
 
