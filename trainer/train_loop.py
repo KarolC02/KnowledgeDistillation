@@ -34,7 +34,7 @@ def train_one_epoch(train_loader, optimizer, device, epoch, num_epochs, model, c
                 writer.add_scalar("Train/Loss", loss.item(), global_step)
                 writer.add_scalar("Train/Accuracy", acc, global_step)
             
-            validate_single_batch(model, val_loader, device)
+            # validate_single_batch(model, val_loader, device)
 
     avg_loss = running_loss / len(train_loader)
     acc = correct / total
