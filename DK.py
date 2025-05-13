@@ -89,6 +89,10 @@ def main():
         train_one_epoch_distillation(train_loader, optimizer, student, epoch, args.num_epochs, writer, args.temperature, args.alpha, val_loader)
         if scheduler:
             scheduler.step()
+            current_lr = optimizer.param_groups[0]['lr']
+            writer.add_scalar("lr", current_lr, epoch)
+            print(f"[Epoch {epoch+1}] Learning rate adjusted to: {current_lr:.2e}")
+
 
     validate_model(student, val_loader, torch.device("cuda" if torch.cuda.is_available() else "cpu"), args.num_epochs - 1, writer)
 
